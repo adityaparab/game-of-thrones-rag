@@ -1,0 +1,15 @@
+# Local Qdrant vector database.
+# Kept separate from the app image on purpose: in production the app talks to a
+# managed/external Qdrant via QDRANT_URL, while locally you run this container.
+#
+#   docker build -f Dockerfile.qdrant -t got-qdrant .
+#   docker run --rm -p 6333:6333 -p 6334:6334 -v got_qdrant:/qdrant/storage got-qdrant
+#
+# (docker-compose.yml builds and wires this for you automatically.)
+FROM qdrant/qdrant:v1.15.1
+
+# REST (6333) and gRPC (6334)
+EXPOSE 6333 6334
+
+# Persist vectors to a mounted volume.
+VOLUME ["/qdrant/storage"]

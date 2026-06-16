@@ -1,0 +1,25 @@
+# Railway deployment config.
+#
+# Build: uses the app Dockerfile. The same image serves both apps — the entrypoint
+# switches on the APP env var, and Railway's injected $PORT is honoured automatically.
+#
+# Recommended setup (two services from this one repo/image):
+#   - Service "api":        APP=api        (this file's defaults; healthcheck below)
+#   - Service "streamlit":  APP=streamlit  (override APP and clear healthcheckPath)
+#
+# Qdrant is NOT deployed here. Point the app at an external/managed Qdrant by setting
+# QDRANT_URL (and QDRANT_API_KEY if required) in the service variables.
+#
+# Required variables: OPENAI_API_KEY, QDRANT_URL
+# Recommended:        COHERE_API_KEY (reranking), QDRANT_API_KEY
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "bash docker/entrypoint.sh"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

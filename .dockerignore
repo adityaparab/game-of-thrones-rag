@@ -1,0 +1,20 @@
+# Keep the build context (and image) small.
+.git
+.venv
+__pycache__/
+*.py[cod]
+
+# Local data / build artifacts — never bake these into the image
+extracted_data/
+source_data/
+out_md/
+qdrant_data/
+*.pkl
+
+# Local env / editor
+.env
+.idea/
+.vscode/
+
+# Docs / docker meta not needed at runtime
+*.md
