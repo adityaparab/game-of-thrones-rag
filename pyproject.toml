@@ -30,14 +30,16 @@ dependencies = [
 ingest = [
     "mwparserfromhell>=0.7.2",
     "mwxml>=0.3.8",
+    "py7zr>=0.22.0",
 ]
 
 [dependency-groups]
 dev = [
     "pyright>=1.1.405",
-    # Same versions as the `ingest` extra — needed for Pyright/Pylance on ingest_mwparser.py
+    # Same versions as the `ingest` extra — needed for Pyright/Pylance on ingest scripts
     "mwparserfromhell>=0.7.2",
     "mwxml>=0.3.8",
+    "py7zr>=0.22.0",
 ]
 
 [tool.uv]
@@ -58,6 +60,7 @@ include = [
     "cli.py",
     "config.py",
     "ingest_mwparser.py",
+    "setup_source_data.py",
     "models.py",
     "rag.py",
     "retrieval.py",

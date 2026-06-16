@@ -1,9 +1,16 @@
 """Central configuration. All values overridable via environment / .env."""
 import os
+import sys
 from dataclasses import dataclass
+from urllib.parse import urlparse
+
 from dotenv import load_dotenv
+from qdrant_client import QdrantClient
+from qdrant_client.http import models as qm
 
 load_dotenv()
+
+PROBE_COLLECTION = "_qdrant_connectivity_probe"
 
 # Which LLM powers chat/generation: "openai" or "deepseek". DeepSeek speaks the
 # OpenAI-compatible API, so chat just points at a different base URL + key.
@@ -54,3 +61,37 @@ class Settings:
 
 
 settings = Settings()
+
+
+def qdrant_port(url: str) -> int | None:
+    """Port from QDRANT_URL when explicit (e.g. localhost:6333); None for host-only HTTPS URLs (Railway)."""
+    return urlparse(url).port
+
+
+def get_qdrant_client() -> QdrantClient:
+    if settings.qdrant_url:
+        return QdrantClient(
+            url=settings.qdrant_url,
+            api_key=settings.qdrant_api_key or None,
+            port=qdrant_port(settings.qdrant_url),
+        )
+    return QdrantClient(path=settings.qdrant_path)
+
+
+def ensure_qdrant_accessible() -> None:
+    """Verify Qdrant is reachable by creating and deleting a dummy collection."""
+    client = get_qdrant_client()
+    target = settings.qdrant_url or settings.qdrant_path
+    try:
+        print(f"Checking Qdrant accessibility at {target!r}")
+        if client.collection_exists(PROBE_COLLECTION):
+            client.delete_collection(PROBE_COLLECTION)
+        client.create_collection(
+            PROBE_COLLECTION,
+            vectors_config=qm.VectorParams(size=1, distance=qm.Distance.COSINE),
+        )
+        client.delete_collection(PROBE_COLLECTION)
+        print(f"Qdrant is accessible at {target!r}")
+    except Exception as e:
+        print(f"Qdrant is not accessible at {target!r}: {e}", file=sys.stderr)
+        sys.exit(1)

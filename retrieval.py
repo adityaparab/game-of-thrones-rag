@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 
 from qdrant_client import QdrantClient
 
-from config import settings
+from config import settings, get_qdrant_client, ensure_qdrant_accessible
 from chunking import tokenize
 import models
 
@@ -17,8 +17,8 @@ _chunks: Optional[List[Dict]] = None
 def _load():
     global _client, _bm25, _chunks
     if _client is None:
-        _client = (QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None, port=None)
-                   if settings.qdrant_url else QdrantClient(path=settings.qdrant_path))
+        ensure_qdrant_accessible()
+        _client = get_qdrant_client()
     if _bm25 is None:
         with open(settings.bm25_path, "rb") as f:
             data = pickle.load(f)

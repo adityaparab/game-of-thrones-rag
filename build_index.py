@@ -16,18 +16,17 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 from rank_bm25 import BM25Okapi
 
-from config import settings
+from config import settings, get_qdrant_client, ensure_qdrant_accessible
 from chunking import iter_corpus, tokenize
 import models
 
 
 def get_qdrant() -> QdrantClient:
-    if settings.qdrant_url:
-        return QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None, port=None)
-    return QdrantClient(path=settings.qdrant_path)
+    return get_qdrant_client()
 
 
 def build(embed_fn: Optional[Callable[[List[str]], List[List[float]]]] = None):
+    ensure_qdrant_accessible()
     embed_fn = embed_fn or models.embed_texts
 
     print("Loading + chunking corpus ...")
