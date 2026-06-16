@@ -17,7 +17,7 @@ _chunks: Optional[List[Dict]] = None
 def _load():
     global _client, _bm25, _chunks
     if _client is None:
-        _client = (QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None)
+        _client = (QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None, port=None)
                    if settings.qdrant_url else QdrantClient(path=settings.qdrant_path))
     if _bm25 is None:
         with open(settings.bm25_path, "rb") as f:

@@ -23,7 +23,7 @@ import models
 
 def get_qdrant() -> QdrantClient:
     if settings.qdrant_url:
-        return QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None)
+        return QdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key or None, port=None)
     return QdrantClient(path=settings.qdrant_path)
 
 
