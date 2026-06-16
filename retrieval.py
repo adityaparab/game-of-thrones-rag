@@ -1,9 +1,12 @@
 """Hybrid retrieval: dense (Qdrant) + sparse (BM25), fused with Reciprocal Rank
 Fusion, then reranked with a Cohere cross-encoder. Returns the top-N chunks."""
+import os
 import pickle
-from typing import List, Dict, Optional
+import sys
+from typing import List, Dict, Optional, Tuple
 
 from qdrant_client import QdrantClient
+from rank_bm25 import BM25Okapi
 
 from config import settings, get_qdrant_client, ensure_qdrant_accessible
 from chunking import tokenize
@@ -14,15 +17,62 @@ _bm25 = None
 _chunks: Optional[List[Dict]] = None
 
 
+def _load_bm25_from_qdrant(client: QdrantClient) -> Tuple[BM25Okapi, List[Dict]]:
+    """Rebuild BM25 + chunk list from Qdrant payloads (used when no local pickle exists)."""
+    if not client.collection_exists(settings.collection):
+        sys.exit(
+            f"BM25 index not found at {settings.bm25_path!r} and Qdrant collection "
+            f"{settings.collection!r} does not exist. Run build_index.py first."
+        )
+
+    points_by_id: Dict[int, Dict] = {}
+    offset = None
+    while True:
+        batch, offset = client.scroll(
+            settings.collection,
+            limit=256,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for point in batch:
+            if point.payload:
+                points_by_id[int(point.id)] = point.payload
+        if offset is None:
+            break
+
+    if not points_by_id:
+        sys.exit(
+            f"BM25 index not found at {settings.bm25_path!r} and Qdrant collection "
+            f"{settings.collection!r} is empty. Run build_index.py first."
+        )
+
+    max_id = max(points_by_id)
+    if len(points_by_id) != max_id + 1:
+        sys.exit(
+            f"Qdrant collection {settings.collection!r} has non-contiguous point IDs; "
+            "cannot rebuild BM25 index. Re-run build_index.py."
+        )
+
+    chunks = [points_by_id[i] for i in range(max_id + 1)]
+    bm25 = BM25Okapi([tokenize(c["text"]) for c in chunks])
+    print(f"Loaded BM25 index from Qdrant ({len(chunks)} chunks)", file=sys.stderr)
+    return bm25, chunks
+
+
 def _load():
     global _client, _bm25, _chunks
     if _client is None:
         ensure_qdrant_accessible()
         _client = get_qdrant_client()
     if _bm25 is None:
-        with open(settings.bm25_path, "rb") as f:
-            data = pickle.load(f)
-        _bm25, _chunks = data["bm25"], data["chunks"]
+        if os.path.isfile(settings.bm25_path):
+            with open(settings.bm25_path, "rb") as f:
+                data = pickle.load(f)
+            _bm25, _chunks = data["bm25"], data["chunks"]
+        else:
+            assert _client is not None
+            _bm25, _chunks = _load_bm25_from_qdrant(_client)
 
 
 def dense_search(query: str, k: int) -> List[int]:
