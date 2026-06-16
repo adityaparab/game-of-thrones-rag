@@ -5,7 +5,8 @@
 #
 # Recommended setup (two services from this one repo/image):
 #   - Service "api":        APP=api        (this file's defaults; healthcheck below)
-#   - Service "streamlit":  APP=streamlit  (override APP and clear healthcheckPath)
+#   - Service "streamlit":  APP=streamlit  (override APP; set RAG_API_URL to the api URL;
+#                           clear healthcheckPath — Streamlit has no /health endpoint)
 #
 # Qdrant is NOT deployed here. Point the app at an external/managed Qdrant by setting
 # QDRANT_URL (and QDRANT_API_KEY if required) in the service variables.

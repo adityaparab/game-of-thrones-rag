@@ -12,6 +12,10 @@ load_dotenv()
 
 PROBE_COLLECTION = "_qdrant_connectivity_probe"
 
+
+class QdrantConnectionError(RuntimeError):
+    """Raised when Qdrant cannot be reached (web apps should surface this, not exit)."""
+
 # Which LLM powers chat/generation: "openai" or "deepseek". DeepSeek speaks the
 # OpenAI-compatible API, so chat just points at a different base URL + key.
 # (Embeddings have no DeepSeek equivalent and always use OpenAI — see below.)
@@ -93,5 +97,6 @@ def ensure_qdrant_accessible() -> None:
         client.delete_collection(PROBE_COLLECTION)
         print(f"Qdrant is accessible at {target!r}")
     except Exception as e:
-        print(f"Qdrant is not accessible at {target!r}: {e}", file=sys.stderr)
-        sys.exit(1)
+        msg = f"Qdrant is not accessible at {target!r}: {e}"
+        print(msg, file=sys.stderr)
+        raise QdrantConnectionError(msg) from e

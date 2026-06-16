@@ -20,7 +20,7 @@ _chunks: Optional[List[Dict]] = None
 def _load_bm25_from_qdrant(client: QdrantClient) -> Tuple[BM25Okapi, List[Dict]]:
     """Rebuild BM25 + chunk list from Qdrant payloads (used when no local pickle exists)."""
     if not client.collection_exists(settings.collection):
-        sys.exit(
+        raise RuntimeError(
             f"BM25 index not found at {settings.bm25_path!r} and Qdrant collection "
             f"{settings.collection!r} does not exist. Run build_index.py first."
         )
@@ -42,14 +42,14 @@ def _load_bm25_from_qdrant(client: QdrantClient) -> Tuple[BM25Okapi, List[Dict]]
             break
 
     if not points_by_id:
-        sys.exit(
+        raise RuntimeError(
             f"BM25 index not found at {settings.bm25_path!r} and Qdrant collection "
             f"{settings.collection!r} is empty. Run build_index.py first."
         )
 
     max_id = max(points_by_id)
     if len(points_by_id) != max_id + 1:
-        sys.exit(
+        raise RuntimeError(
             f"Qdrant collection {settings.collection!r} has non-contiguous point IDs; "
             "cannot rebuild BM25 index. Re-run build_index.py."
         )

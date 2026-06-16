@@ -11,7 +11,10 @@ case "$APP" in
     ;;
   streamlit)
     exec uv run --no-sync streamlit run app_streamlit.py \
-      --server.address 0.0.0.0 --server.port "${PORT:-8501}"
+      --server.address 0.0.0.0 \
+      --server.port "${PORT:-8501}" \
+      --server.enableWebsocketCompression=false \
+      --server.headless=true
     ;;
   *)
     echo "Unknown APP='$APP' (expected 'api' or 'streamlit')" >&2
